@@ -3,14 +3,14 @@ use regex::Regex;
 
 
 #[derive(PartialEq, Debug)]
-enum DayColor {
+pub enum DayColor {
     Blue,
     White,
     Red
 }
 
 #[derive(PartialEq, Debug)]
-enum TariffOptionValue {
+pub enum TariffOptionValue {
     Base,
     OffPeakHours,
     EJP,
@@ -18,19 +18,19 @@ enum TariffOptionValue {
 }
 
 #[derive(PartialEq, Debug)]
-enum HourlyTarifPeriod {
+pub enum HourlyTarifPeriod {
     OffPeakHours,
     PeakHours
 }
 
 #[derive(PartialEq, Debug)]
-struct TarifPeriod {
+pub struct TarifPeriod {
     hour: HourlyTarifPeriod,
     day_color: Option<DayColor>
 }
 
 #[derive(PartialEq, Debug)]
-enum Message {
+pub enum Message {
     ADCO,
     TariffOption(TariffOptionValue),
     Tomorrow(Option<DayColor>),
@@ -43,33 +43,7 @@ enum Message {
     }
 }
 
-fn parse_period(code: &str) -> Result<TarifPeriod, String> {
-    // BBRHCJB
-
-    let hour = code.chars().nth(4).unwrap();
-    let hour = if hour == 'C' {
-        HourlyTarifPeriod::OffPeakHours
-    } else if hour == 'P' {
-        HourlyTarifPeriod::PeakHours
-    } else {
-        return Err(format!("Unable to parse hourly period from {}", code));
-    };
-
-    let day = code.chars().nth(6).unwrap();
-    let day = match day {
-        'B' => DayColor::Blue,
-        'W' => DayColor::White,
-        'R' => DayColor::Red,
-        _ => { return Err(format!("Unable to parse day color period from {}", code))}
-    };
-
-    Ok(TarifPeriod {
-        hour: hour,
-        day_color: Some(day)
-    })
-}
-
-fn parse_line(line: &str) -> Result<Message, String> {
+pub fn parse_line(line: &str) -> Result<Message, String> {
     lazy_static! {
         static ref RE: Regex = Regex::new("^(ADCO|Tomorrow|OPTARIF|IINST[123]|BBRH[CP]J[BWR])\
         [ U+0009](.+)[ U+0009](.)$").unwrap();
@@ -126,6 +100,34 @@ fn parse_line(line: &str) -> Result<Message, String> {
     }
     Err(String::from(format!("Unrecognized line: '{}'", line)))
 }
+
+
+fn parse_period(code: &str) -> Result<TarifPeriod, String> {
+    // BBRHCJB
+
+    let hour = code.chars().nth(4).unwrap();
+    let hour = if hour == 'C' {
+        HourlyTarifPeriod::OffPeakHours
+    } else if hour == 'P' {
+        HourlyTarifPeriod::PeakHours
+    } else {
+        return Err(format!("Unable to parse hourly period from {}", code));
+    };
+
+    let day = code.chars().nth(6).unwrap();
+    let day = match day {
+        'B' => DayColor::Blue,
+        'W' => DayColor::White,
+        'R' => DayColor::Red,
+        _ => { return Err(format!("Unable to parse day color period from {}", code))}
+    };
+
+    Ok(TarifPeriod {
+        hour: hour,
+        day_color: Some(day)
+    })
+}
+
 
 #[cfg(test)]
 mod tests {

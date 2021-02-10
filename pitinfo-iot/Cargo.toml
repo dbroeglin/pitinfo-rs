@@ -1,11 +1,13 @@
 [package]
-name = "iot-rs"
+name = "pitinfo-iot"
 version = "0.1.0"
-authors = ["pirate"]
+authors = ["Dominique Broeglin <dominique.broeglin@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+pitinfo-parser = { path = "../pitinfo-parser" }
 
 serialport = "4.0.0"
