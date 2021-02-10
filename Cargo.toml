@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "pitinfo-iot",
+    "pitinfo-parser"
+]
