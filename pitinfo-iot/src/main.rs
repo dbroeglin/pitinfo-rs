@@ -1,36 +1,43 @@
+use pitinfo_parser::parse_line;
+use serialport::{self, DataBits, FlowControl, Parity, StopBits};
 use std::io::{self, BufRead, BufReader};
 use std::time::Duration;
-use serialport::{self, Parity, DataBits, FlowControl, StopBits};
-use pitinfo_parser::parse_line;
 
-
-fn main() -> Result<(), io::Error> { 
+fn main() -> Result<(), io::Error> {
     let port = serialport::new("/dev/ttyAMA0", 1200)
         .parity(Parity::Even)
-	    .data_bits(DataBits::Seven)
-	    .flow_control(FlowControl::None)
+        .data_bits(DataBits::Seven)
+        .flow_control(FlowControl::None)
         .stop_bits(StopBits::One)
-	    .timeout(Duration::from_millis(1000))
-	    .open();
+        .timeout(Duration::from_millis(1000))
+        .open();
 
     match port {
         Ok(port) => {
             let f = BufReader::with_capacity(20, port);
 
-            for line in f.lines() {
+            for line in f.lines().skip(1) {
                 match line {
-                    Ok(line) => {
+                    Ok(mut line) => {
+                        // PPOT at the end of the frame gets control chars:
+                        // \x03 -> enf of frame, \x02 -> start of frame, and new line
+                        line =
+                            String::from(line.trim_end_matches(&['\x03', '\x02', '\x0d'] as &[_]));
                         let result = parse_line(&line);
                         match result {
-                            Ok(message) => {
-                                println!("Message: {:?}", message);
+                            Ok(Some(message)) => {
+                                println!("Message: {:<20} -> {:?}", line, message);
+                            }
+                            Ok(None) => {
+                                println!("Message: {:<20} -> Ignored", line);
                             }
                             Err(e) => {
                                 eprintln!("Error reading line: '{}': {}", line, e);
                             }
                         }
-                    },
-                    Err(ref e) if e.kind() == io::ErrorKind::TimedOut => (), Err(e) => eprintln!("{:?}", e),
+                    }
+                    Err(ref e) if e.kind() == io::ErrorKind::TimedOut => (),
+                    Err(e) => eprintln!("{:?}", e),
                 }
             }
             Ok(())
