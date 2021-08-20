@@ -1,4 +1,4 @@
-use pitinfo_parser::parse_line;
+use pitinfo_parser::parse_group;
 use serialport::{self, DataBits, FlowControl, Parity, StopBits};
 use std::io::{self, BufRead, BufReader};
 use std::time::Duration;
@@ -18,21 +18,21 @@ fn main() -> Result<(), io::Error> {
 
             for line in f.lines().skip(1) {
                 match line {
-                    Ok(mut line) => {
+                    Ok(line) => {
                         // PPOT at the end of the frame gets control chars:
                         // \x03 -> enf of frame, \x02 -> start of frame, and new line
-                        line =
+                        let group =
                             String::from(line.trim_end_matches(&['\x03', '\x02', '\x0d'] as &[_]));
-                        let result = parse_line(&line);
+                        let result = parse_group(&group);
                         match result {
                             Ok(Some(message)) => {
-                                println!("Message: {:<20} -> {:?}", line, message);
+                                println!("Message: {:<20} -> {:?}", group, message);
                             }
                             Ok(None) => {
-                                println!("Message: {:<20} -> Ignored", line);
+                                println!("Message: {:<20} -> Ignored", group);
                             }
                             Err(e) => {
-                                eprintln!("Error reading line: '{}': {}", line, e);
+                                eprintln!("Error reading group: '{}': {}", group, e);
                             }
                         }
                     }
